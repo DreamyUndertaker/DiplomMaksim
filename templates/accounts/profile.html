@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ user.username }} — Профиль{% endblock %}
+{% block content %}
+<div class="row">
+    <!-- Левая колонка: аватар и настройки -->
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-body text-center">
+                <!-- Безопасный вывод аватара -->
+                {% if user.profile.avatar and user.profile.avatar.name %}
+                    <img src="{{ user.profile.avatar.url }}" class="rounded-circle mb-3" width="120" height="120" style="object-fit: cover;" alt="Аватар">
+                {% else %}
+                    <img src="{% static 'images/default.jpg' %}" class="rounded-circle mb-3" width="120" height="120" style="object-fit: cover;" alt="Аватар по умолчанию">
+                {% endif %}
+
+                <h5>{{ user.username }}</h5>
+                <p class="text-muted">{{ user.email }}</p>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3 text-start">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% for error in field.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary btn-sm">Сохранить изменения</button>
+                </form>
+                <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger btn-sm mt-2">Выйти</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Правая колонка: история и плейлисты -->
+    <div class="col-md-8">
+        <h4>🎧 Недавно прослушано</h4>
+        {% for progress in recent_progress %}
+        <div class="card mb-2">
+            <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ progress.chapter.audiobook.title }}</strong><br>
+                    <small class="text-muted">Глава {{ progress.chapter.number }} • {{ progress.position_seconds }} сек</small>
+                </div>
+                <a href="{% url 'catalog:book_detail' progress.chapter.audiobook.pk %}" class="btn btn-sm btn-outline-primary">Продолжить</a>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">Вы ещё ничего не слушали.</p>
+        {% endfor %}
+
+        <h4 class="mt-4">📋 Мои плейлисты</h4>
+        {% for playlist in playlists %}
+        <div class="card mb-2">
+            <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ playlist.title }}</strong> • {{ playlist.items.count }} глав
+                </div>
+                <a href="#" class="btn btn-sm btn-outline-secondary">Открыть</a>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">У вас пока нет плейлистов.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

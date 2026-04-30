@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Каталог аудиокниг{% endblock %}
+{% block content %}
+<h1 class="mb-4">📚 Каталог</h1>
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{% url 'catalog:book_list' %}" class="btn btn-sm btn-outline-secondary {% if not active_genre_slug %}active{% endif %}">Все</a>
+    {% for genre in genres %}
+        <a href="{% url 'catalog:genre_list' genre.slug %}" class="btn btn-sm btn-outline-secondary {% if active_genre_slug == genre.slug %}active{% endif %}">
+            {{ genre.name }}
+        </a>
+    {% endfor %}
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+    {% for book in books %}
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <img src="{{ book.cover.url }}" class="card-img-top" alt="{{ book.title }}" style="height: 280px; object-fit: cover;" loading="lazy">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ book.title }}</h5>
+                <p class="card-text text-muted mb-1">{{ book.author.name }}</p>
+                <p class="card-text small">⏱ {{ book.total_duration|default:"—" }} сек</p>
+                <a href="{% url 'catalog:book_detail' book.pk %}" class="btn btn-primary mt-auto">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <p class="text-muted">Книги не найдены или ещё не опубликованы.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% if is_paginated %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if active_genre_slug %}&genre={{ active_genre_slug }}{% endif %}">← Назад</a>
+            </li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if active_genre_slug %}&genre={{ active_genre_slug }}{% endif %}">Вперёд →</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

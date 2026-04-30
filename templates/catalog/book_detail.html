@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ book.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.audioplayer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg-card); border-top: 1px solid var(--border);
+  padding: 10px 16px; z-index: 1050; display: none;
+  backdrop-filter: blur(8px); box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+}
+.audioplayer.active { display: block; }
+.player-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.player-btn {
+  background: none; border: none; color: var(--text-main);
+  font-size: 1.3rem; cursor: pointer; padding: 6px;
+  border-radius: 50%; transition: background 0.2s;
+}
+.player-btn:hover { background: rgba(29,185,84,0.15); color: var(--primary); }
+.progress-bar {
+  flex: 1; height: 5px; background: var(--border);
+  border-radius: 3px; cursor: pointer; position: relative; min-width: 120px;
+}
+.progress-fill { height: 100%; background: var(--primary); border-radius: 3px; width: 0%; transition: width 0.1s linear; }
+.time-display { font-size: 0.82rem; color: var(--text-muted); min-width: 70px; text-align: center; font-variant-numeric: tabular-nums; }
+.chapter-info { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; font-weight: 500; }
+@media (max-width: 768px) {
+  .chapter-info { max-width: 100%; text-align: center; }
+  .time-display { min-width: 45px; font-size: 0.75rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-4">
+    <img src="{{ book.cover.url }}" class="img-fluid rounded shadow mb-3" alt="{{ book.title }}" loading="lazy">
+  </div>
+  <div class="col-md-8">
+    <h1>{{ book.title }}</h1>
+    <p class="text-muted fs-5">
+      {{ book.author.name }} |
+      {% for g in book.genres.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
+    <p class="mt-3">{{ book.description|linebreaks }}</p>
+
+    <hr class="my-4">
+    <h3>📖 Оглавление</h3>
+    <div class="list-group">
+      {% for chapter in book.chapters.all %}
+      <div class="list-group-item d-flex justify-content-between align-items-center"
+           data-chapter-id="{{ chapter.id }}" data-duration="{{ chapter.duration }}">
+        <div>
+          <strong>{{ chapter.number }}.</strong> {{ chapter.title }}
+          {% if user.is_authenticated %}
+            <button class="btn btn-sm btn-outline-secondary ms-2 toggle-playlist"
+                    data-playlist="default" data-chapter="{{ chapter.id }}">♡</button>
+          {% endif %}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-secondary rounded-pill">{{ chapter.duration }} сек</span>
+          {% if user.is_authenticated %}
+            <button class="btn btn-sm btn-primary play-chapter" data-chapter="{{ chapter.id }}">▶ Слушать</button>
+          {% else %}
+            <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-sm btn-outline-primary">Войти</a>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted">Главы ещё не загружены.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+    
+{% if user.is_authenticated %}
+<div id="audioplayer" class="audioplayer">
+  <div class="player-controls">
+    <button class="player-btn" id="prevBtn" title="Предыдущая">⏮</button>
+    <button class="player-btn" id="playPauseBtn" title="Воспроизвести/Пауза">▶</button>
+    <button class="player-btn" id="nextBtn" title="Следующая">⏭</button>
+
+    <div class="player-progress">
+      <span class="time-display" id="currentTime">0:00</span>
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span class="time-display" id="duration">0:00</span>
+    </div>
+
+    <span class="chapter-info" id="currentChapter">Выберите главу</span>
+
+    <select class="form-select form-select-sm" id="playbackRate" style="max-width: 70px;">
+      <option value="0.75">0.75x</option>
+      <option value="1" selected>1x</option>
+      <option value="1.25">1.25x</option>
+      <option value="1.5">1.5x</option>
+      <option value="2">2x</option>
+    </select>
+  </div>
+  <audio id="audioElement" preload="metadata"></audio>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/player.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof Audioplayer !== 'undefined') {
+    window.player = new Audioplayer({
+      bookId: {{ book.id }},
+      csrfToken: '{{ csrf_token }}'
+    });
+    document.querySelectorAll('.play-chapter').forEach(btn => {
+      btn.addEventListener('click', function() {
+        window.player.loadChapter(this.dataset.chapter);
+      });
+    });
+    document.querySelectorAll('.toggle-playlist').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        fetch(`/player/api/playlist/${this.dataset.playlist}/toggle/${this.dataset.chapter}/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => { this.textContent = data.action === 'added' ? '♥' : '♡'; });
+      });
+    });
+  }
+});
+</script>
+{% endblock %}
