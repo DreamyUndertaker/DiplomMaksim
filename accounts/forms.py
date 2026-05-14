@@ -11,14 +11,16 @@ class CustomUserCreationForm(UserCreationForm):
         model = User
         fields = ("username", "email", "password1", "password2")
 
-    def clean_email(self):
-        email = self.cleaned_data.get("email")
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("Пользователь с таким Email уже существует")
-        return email
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs.update({'class': 'form-control'})
 
 class CustomAuthenticationForm(AuthenticationForm):
-    username = forms.CharField(label="Имя пользователя или Email", max_length=150)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs.update({'class': 'form-control'})
 
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:

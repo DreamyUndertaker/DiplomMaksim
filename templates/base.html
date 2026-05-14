@@ -1,60 +1,136 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AudiobookFlow{% endblock %}</title>
+
+    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <!-- Inline-скрипт для мгновенного применения темы до загрузки CSS -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem('audiobookflow-theme') ||
+                     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+
     {% block extra_css %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="{% url 'catalog:book_list' %}">🎧 AudiobookFlow</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'catalog:book_list' %}">
+                <span class="brand-icon">🎧</span>
+                <span class="brand-text">AudiobookFlow</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                    aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="mainNav">
-                <form class="d-flex me-auto" action="{% url 'catalog:book_list' %}" method="GET">
-                    <input class="form-control me-2" type="search" placeholder="Поиск по названию или автору" name="q" value="{{ request.GET.q }}">
-                    <button class="btn btn-outline-light" type="submit">Найти</button>
+                <!-- Поиск -->
+                <form class="d-flex me-auto my-2 my-lg-0 search-form" action="{% url 'catalog:book_list' %}" method="GET">
+                    <div class="input-group">
+                        <input class="form-control" type="search" placeholder="Поиск по названию или автору..."
+                               name="q" value="{{ request.GET.q }}" aria-label="Search">
+                        <button class="btn btn-search" type="submit">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                            </svg>
+                        </button>
+                    </div>
                 </form>
-                <div class="navbar-nav ms-lg-3">
+
+                <!-- Навигация пользователя -->
+                <div class="navbar-nav ms-lg-3 align-items-center">
+                    <!-- Переключатель темы -->
+                    <button class="btn btn-theme-toggle me-2" id="themeToggle" aria-label="Переключить тему">
+                        <span class="theme-icon-light">☀️</span>
+                        <span class="theme-icon-dark">🌙</span>
+                    </button>
+
                     {% if user.is_authenticated %}
-                        <a class="nav-link" href="{% url 'accounts:profile' %}">👤 {{ user.username }}</a>
-                        <a class="nav-link" href="{% url 'accounts:logout' %}">Выйти</a>
+                        <a class="nav-link nav-user" href="{% url 'accounts:profile' %}">
+                            <span class="user-avatar">👤</span>
+                            <span class="user-name">{{ user.username }}</span>
+                        </a>
+                        <a class="nav-link nav-logout" href="{% url 'accounts:logout' %}">Выйти</a>
                     {% else %}
                         <a class="nav-link" href="{% url 'accounts:login' %}">Войти</a>
-                        <a class="nav-link" href="{% url 'accounts:register' %}">Регистрация</a>
+                        <a class="btn btn-primary btn-sm ms-2 px-3" href="{% url 'accounts:register' %}">Регистрация</a>
                     {% endif %}
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="flex-grow-1 py-4 {% if user.is_authenticated %}has-player{% endif %}">
+    <!-- Основной контент -->
+    <main class="flex-grow-1 py-4 {% if user.is_authenticated %}has-player{% endif %} {% block body_class %}{% endblock %}">
         <div class="container">
+            <!-- Сообщения -->
             {% if messages %}
                 {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <div class="alert alert-{{ message.tags }} alert-custom alert-dismissible fade show" role="alert">
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 {% endfor %}
             {% endif %}
+
             {% block content %}{% endblock %}
         </div>
     </main>
 
-    <footer class="bg-dark text-light py-3 mt-auto">
-        <div class="container text-center">
-            <small>&copy; 2025 AudiobookFlow. Все права защищены.</small>
+    <!-- Футер -->
+    <footer class="footer-custom mt-auto">
+        <div class="container">
+            <div class="row gy-3">
+                <div class="col-lg-4">
+                    <h5 class="footer-title">🎧 AudiobookFlow</h5>
+                    <p class="footer-text small">Современный веб-сервис для прослушивания аудиокниг. Доступно на любом устройстве.</p>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="footer-subtitle">Навигация</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="{% url 'catalog:book_list' %}">Каталог</a></li>
+                        <li><a href="#">Жанры</a></li>
+                        <li><a href="#">Авторы</a></li>
+                        <li><a href="#">Новинки</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="footer-subtitle">Поддержка</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="#">Помощь</a></li>
+                        <li><a href="#">Контакты</a></li>
+                        <li><a href="#">Политика конфиденциальности</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="footer-divider">
+            <div class="text-center small">
+                &copy; 2025 AudiobookFlow. Все права защищены.
+            </div>
         </div>
     </footer>
 
+    <!-- Скрипты -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Theme Toggle -->
+    <script src="{% static 'js/theme-toggle.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

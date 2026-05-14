@@ -1,52 +1,294 @@
 {% extends 'base.html' %}
-{% block title %}Каталог аудиокниг{% endblock %}
-{% block content %}
-<h1 class="mb-4">📚 Каталог</h1>
+{% load static %}
 
-<div class="d-flex flex-wrap gap-2 mb-4">
-    <a href="{% url 'catalog:book_list' %}" class="btn btn-sm btn-outline-secondary {% if not active_genre_slug %}active{% endif %}">Все</a>
-    {% for genre in genres %}
-        <a href="{% url 'catalog:genre_list' genre.slug %}" class="btn btn-sm btn-outline-secondary {% if active_genre_slug == genre.slug %}active{% endif %}">
+{% block title %}Каталог аудиокниг — AudiobookFlow{% endblock %}
+
+{% block content %}
+<!-- Заголовок и поиск -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h1 class="h3 h2-md mb-1">📚 Каталог аудиокниг</h1>
+        <p class="text-muted mb-0 small">Найдено: <strong>{{ page_obj.paginator.count }}</strong> книг</p>
+    </div>
+
+    {% if request.GET.q %}
+    <div class="alert alert-info alert-custom py-2 px-3 mb-0">
+        <small>Результаты поиска: <strong>"{{ request.GET.q }}"</strong>
+            <a href="{% url 'catalog:book_list' %}" class="ms-2 text-decoration-none">✕ Сбросить</a>
+        </small>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Фильтры по жанрам -->
+<div class="filters-wrapper mb-4">
+    <div class="d-flex flex-wrap gap-2" role="tablist" aria-label="Фильтры по жанрам">
+        <a href="{% url 'catalog:book_list' %}{% if request.GET.q %}?q={{ request.GET.q }}{% endif %}"
+           class="btn btn-filter {% if not active_genre_slug %}active{% endif %}"
+           role="tab"
+           aria-selected="{% if not active_genre_slug %}true{% else %}false{% endif %}">
+            Все жанры
+        </a>
+        {% for genre in genres %}
+        <a href="{% url 'catalog:genre_list' genre.slug %}{% if request.GET.q %}?q={{ request.GET.q }}{% endif %}"
+           class="btn btn-filter {% if active_genre_slug == genre.slug %}active{% endif %}"
+           role="tab"
+           aria-selected="{% if active_genre_slug == genre.slug %}true{% else %}false{% endif %}">
             {{ genre.name }}
         </a>
-    {% endfor %}
+        {% endfor %}
+    </div>
 </div>
 
-<div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+<!-- Сетка книг -->
+{% if books %}
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4" id="booksGrid">
     {% for book in books %}
     <div class="col">
-        <div class="card h-100 shadow-sm">
-            <img src="{{ book.cover.url }}" class="card-img-top" alt="{{ book.title }}" style="height: 280px; object-fit: cover;" loading="lazy">
-            <div class="card-body d-flex flex-column">
-                <h5 class="card-title">{{ book.title }}</h5>
-                <p class="card-text text-muted mb-1">{{ book.author.name }}</p>
-                <p class="card-text small">⏱ {{ book.total_duration|default:"—" }} сек</p>
-                <a href="{% url 'catalog:book_detail' book.pk %}" class="btn btn-primary mt-auto">Подробнее</a>
+        <article class="card book-card h-100 hover-lift" itemscope itemtype="https://schema.org/Book">
+            <!-- Обложка -->
+            <div class="book-cover-wrapper position-relative">
+                <a href="{% url 'catalog:book_detail' book.pk %}" class="stretched-link" aria-label="Подробнее о книге {{ book.title }}">
+                    <img src="{{ book.cover.url }}"
+                         class="card-img-top book-cover"
+                         alt="Обложка: {{ book.title }}"
+                         loading="lazy"
+                         itemprop="image">
+                </a>
+                {% if book.is_published %}
+                <span class="badge badge-status badge-new position-absolute top-0 end-0 m-2">Новинка</span>
+                {% endif %}
             </div>
-        </div>
-    </div>
-    {% empty %}
-    <div class="col-12 text-center py-5">
-        <p class="text-muted">Книги не найдены или ещё не опубликованы.</p>
+
+            <!-- Контент карточки -->
+            <div class="card-body d-flex flex-column">
+                <!-- Жанры -->
+                {% if book.genres.all %}
+                <div class="book-genres mb-2">
+                    {% for genre in book.genres.all|slice:":2" %}
+                    <span class="badge badge-genre">{{ genre.name }}</span>
+                    {% endfor %}
+                    {% if book.genres.count > 2 %}
+                    <span class="badge badge-genre">+{{ book.genres.count|add:"-2" }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Заголовок и автор -->
+                <h2 class="card-title book-title mb-1" itemprop="name">
+                    <a href="{% url 'catalog:book_detail' book.pk %}" class="text-decoration-none text-reset stretched-link">
+                        {{ book.title }}
+                    </a>
+                </h2>
+                <p class="card-text book-author text-muted mb-2" itemprop="author" itemscope itemtype="https://schema.org/Person">
+                    <small>👤 <span itemprop="name">{{ book.author.name }}</span></small>
+                </p>
+
+                <!-- Мета-информация -->
+                <div class="book-meta mt-auto pt-2 border-top">
+                    <div class="d-flex justify-content-between align-items-center small text-muted">
+                        <span>⏱ {{ book.total_duration|default:"—" }} сек</span>
+                        {% if book.publication_year %}
+                        <span>📅 {{ book.publication_year }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Кнопка действия -->
+                <a href="{% url 'catalog:book_detail' book.pk %}"
+                   class="btn btn-primary btn-sm mt-3 w-100"
+                   itemprop="url">
+                    Подробнее
+                </a>
+            </div>
+        </article>
     </div>
     {% endfor %}
 </div>
 
+<!-- Пагинация -->
 {% if is_paginated %}
-<nav class="mt-4">
-    <ul class="pagination justify-content-center">
+<nav class="mt-5" aria-label="Навигация по страницам каталога">
+    <ul class="pagination pagination-custom justify-content-center">
         {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if active_genre_slug %}&genre={{ active_genre_slug }}{% endif %}">← Назад</a>
-            </li>
+        <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if active_genre_slug %}&genre={{ active_genre_slug }}{% endif %}"
+               aria-label="Предыдущая страница">
+                <span aria-hidden="true">←</span> Назад
+            </a>
+        </li>
         {% endif %}
-        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
-        {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if active_genre_slug %}&genre={{ active_genre_slug }}{% endif %}">Вперёд →</a>
+
+        <!-- Номера страниц -->
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active" aria-current="page">
+                <span class="page-link">{{ num }}</span>
             </li>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if active_genre_slug %}&genre={{ active_genre_slug }}{% endif %}">
+                    {{ num }}
+                </a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if active_genre_slug %}&genre={{ active_genre_slug }}{% endif %}"
+               aria-label="Следующая страница">
+                Вперёд <span aria-hidden="true">→</span>
+            </a>
+        </li>
         {% endif %}
     </ul>
+    <p class="text-center text-muted small mt-2">
+        Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+    </p>
 </nav>
 {% endif %}
+
+{% else %}
+<!-- Пустое состояние -->
+<div class="text-center py-5">
+    <div class="empty-state-icon mb-3">📭</div>
+    <h3 class="h5 mb-2">Книги не найдены</h3>
+    <p class="text-muted mb-4">
+        {% if request.GET.q %}
+            По запросу <strong>"{{ request.GET.q }}"</strong> ничего не найдено.<br>
+            Попробуйте изменить поисковый запрос или сбросить фильтры.
+        {% else %}
+            В этой категории пока нет опубликованных книг.<br>
+            Загляните позже — мы регулярно добавляем новинки!
+        {% endif %}
+    </p>
+    <a href="{% url 'catalog:book_list' %}" class="btn btn-outline-secondary">
+        Сбросить фильтры
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Фильтры */
+.filters-wrapper {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+}
+.filters-wrapper::-webkit-scrollbar {
+    height: 4px;
+}
+.filters-wrapper::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 2px;
+}
+
+.btn-filter {
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--color-border);
+    background: var(--color-bg-card);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+.btn-filter:hover,
+.btn-filter.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Карточка книги */
+.book-card {
+    overflow: hidden;
+}
+.book-cover-wrapper {
+    overflow: hidden;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.book-cover {
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+}
+.book-card:hover .book-cover {
+    transform: scale(1.05);
+}
+
+/* Бейджи */
+.badge-genre {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    margin-right: 0.25rem;
+    border-radius: var(--radius-sm);
+}
+.badge-status {
+    background: var(--color-primary);
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.5rem;
+}
+
+/* Заголовок книги */
+.book-title {
+    font-size: 1.05rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.book-author {
+    font-size: 0.9rem;
+}
+
+/* Пагинация */
+.pagination-custom .page-link {
+    border-radius: var(--radius-sm);
+    margin: 0 2px;
+    color: var(--color-text-secondary);
+    border-color: var(--color-border);
+    transition: all var(--transition-fast);
+}
+.pagination-custom .page-link:hover {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+.pagination-custom .page-item.active .page-link {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+/* Пустое состояние */
+.empty-state-icon {
+    font-size: 3rem;
+    opacity: 0.6;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+    .book-title {
+        font-size: 1rem;
+    }
+    .btn-filter {
+        padding: 0.35rem 0.85rem;
+        font-size: 0.85rem;
+    }
+}
+</style>
 {% endblock %}

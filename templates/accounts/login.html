@@ -1,32 +1,68 @@
 {% extends 'base.html' %}
-{% block title %}Вход{% endblock %}
+{% load static %}
+
+{% block title %}Вход — AudiobookFlow{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow">
-            <div class="card-body">
-                <h3 class="card-title text-center mb-4">🔐 Вход в аккаунт</h3>
-                <form method="post">
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-5 col-lg-4">
+        <div class="card auth-card shadow-lg border-0">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="auth-icon mb-3">🔐</div>
+                    <h3 class="card-title fw-bold mb-2">Вход в аккаунт</h3>
+                    <p class="text-muted small">Войдите, чтобы продолжить прослушивание</p>
+                </div>
+
+                <form method="post" novalidate>
                     {% csrf_token %}
                     {% for field in form %}
                     <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        <label for="{{ field.id_for_label }}" class="form-label fw-medium">{{ field.label }}</label>
                         {{ field }}
                         {% if field.help_text %}
-                        <div class="form-text">{{ field.help_text }}</div>
+                        <div class="form-text small">{{ field.help_text }}</div>
                         {% endif %}
                         {% for error in field.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
                     {% endfor %}
-                    <button type="submit" class="btn btn-primary w-100">Войти</button>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-3 hover-lift">
+                        Войти
+                    </button>
                 </form>
-                <p class="text-center mt-3">
-                    Нет аккаунта? <a href="{% url 'accounts:register' %}">Зарегистрироваться</a>
-                </p>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted small mb-0">
+                        Нет аккаунта?
+                        <a href="{% url 'accounts:register' %}" class="fw-medium text-decoration-none ms-1">Зарегистрироваться</a>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.auth-card {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.auth-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+.auth-card .form-control,
+.auth-card .form-select {
+  background: var(--color-bg-body);
+}
+.auth-card .form-control:focus,
+.auth-card .form-select:focus {
+  background: var(--color-bg-card);
+}
+</style>
 {% endblock %}

@@ -1,16 +1,25 @@
 {% extends 'base.html' %}
-{% block title %}Регистрация{% endblock %}
+{% load static %}
+
+{% block title %}Регистрация — AudiobookFlow{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-body">
-                <h3 class="card-title text-center mb-4">📝 Регистрация</h3>
-                <form method="post">
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-6 col-lg-5">
+        <div class="card auth-card shadow-lg border-0">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="auth-icon mb-3">📝</div>
+                    <h3 class="card-title fw-bold mb-2">Создание аккаунта</h3>
+                    <p class="text-muted small">Присоединяйтесь к AudiobookFlow и слушайте книги где угодно</p>
+                </div>
+
+                <form method="post" novalidate>
                     {% csrf_token %}
+
                     {% for field in form %}
                     <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        <label for="{{ field.id_for_label }}" class="form-label fw-medium">{{ field.label }}</label>
                         {{ field }}
                         {% if field.help_text %}
                         <div class="form-text">{{ field.help_text }}</div>
@@ -20,13 +29,42 @@
                         {% endfor %}
                     </div>
                     {% endfor %}
-                    <button type="submit" class="btn btn-success w-100">Создать аккаунт</button>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-3 hover-lift">
+                        Зарегистрироваться
+                    </button>
                 </form>
-                <p class="text-center mt-3">
-                    Уже есть аккаунт? <a href="{% url 'accounts:login' %}">Войти</a>
-                </p>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted small mb-0">
+                        Уже есть аккаунт?
+                        <a href="{% url 'accounts:login' %}" class="fw-medium text-decoration-none ms-1">Войти</a>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.auth-card {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.auth-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+/* Синхронизация фона полей с темой */
+.auth-card .form-control,
+.auth-card .form-select {
+  background: var(--color-bg-body);
+}
+.auth-card .form-control:focus,
+.auth-card .form-select:focus {
+  background: var(--color-bg-card);
+}
+</style>
 {% endblock %}
